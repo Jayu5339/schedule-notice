@@ -1,0 +1,284 @@
+/* client/src/pages/Onboarding.css */
+/* Onboarding.jsx가 사용하는 onboarding__*, btn--* 클래스에 대응하는 스타일입니다. */
+
+.onboarding {
+  --ink: #17171F;
+  --ink-soft: #6B6B76;
+  --bg: #F4F4F6;
+  --card: #FFFFFF;
+  --line: #E7E7EC;
+  --red: #EA4B3C;
+  --blue: #4C6FFF;
+  --green: #2FA37C;
+
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  background: var(--bg);
+  font-family: 'Pretendard', -apple-system, 'Noto Sans KR', sans-serif;
+  color: var(--ink);
+}
+
+.onboarding__card {
+  width: 100%;
+  max-width: 560px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  box-shadow: 0 24px 60px -30px rgba(23, 23, 31, 0.25);
+  padding: 48px 44px 40px;
+}
+
+/* ---- 상단 브랜드 바 ---- */
+.onboarding__brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 40px;
+}
+.onboarding__badge {
+  width: 30px;
+  height: 30px;
+  background: var(--ink);
+  color: #fff;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.onboarding__brand-name {
+  font-size: 15px;
+  font-weight: 700;
+}
+.onboarding__brand-sep {
+  color: var(--ink-soft);
+}
+.onboarding__brand-sub {
+  font-size: 14px;
+  color: var(--ink-soft);
+  font-weight: 500;
+}
+.onboarding__step-count {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  background: var(--bg);
+  border-radius: 100px;
+  padding: 6px 12px;
+}
+
+/* ---- landing 단계 ---- */
+.onboarding__pill {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--red);
+  background: #FDECEA;
+  padding: 6px 12px;
+  border-radius: 100px;
+  margin-bottom: 20px;
+}
+.onboarding__title {
+  font-size: 30px;
+  line-height: 1.4;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  margin-bottom: 16px;
+}
+.onboarding__title-accent {
+  color: var(--blue);
+}
+.onboarding__desc {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--ink-soft);
+  word-break: keep-all;
+  margin-bottom: 32px;
+}
+.onboarding__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 36px;
+}
+.onboarding__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 100px;
+  padding: 7px 12px 7px 9px;
+}
+.onboarding__tag-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.onboarding__actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.onboarding__login-link {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.onboarding__login-link:hover {
+  color: var(--ink);
+}
+
+/* ---- 버튼 ---- */
+.btn {
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  border-radius: 100px;
+  border: none;
+  cursor: pointer;
+}
+.btn--primary {
+  background: var(--ink);
+  color: #fff;
+  padding: 14px 26px;
+}
+.btn--primary:disabled {
+  background: #D5D5DC;
+  color: #9A9AA5;
+  cursor: not-allowed;
+}
+.btn--link {
+  background: none;
+  color: var(--ink-soft);
+  padding: 14px 4px;
+  font-weight: 600;
+}
+
+/* ---- info / signupPin / login 단계 (폼 공통) ---- */
+.onboarding__heading {
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.45;
+  letter-spacing: -0.01em;
+  margin-bottom: 8px;
+  white-space: pre-line;
+}
+.onboarding__subheading {
+  font-size: 14px;
+  color: var(--ink-soft);
+  line-height: 1.6;
+  margin-bottom: 28px;
+  word-break: keep-all;
+}
+
+.onboarding__field-group {
+  margin-bottom: 20px;
+}
+.onboarding__label {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.onboarding__input {
+  width: 100%;
+  height: 50px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0 16px;
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.onboarding__input:focus {
+  border-color: var(--ink);
+  background: #fff;
+}
+.onboarding__input::placeholder {
+  color: #B0B0BA;
+}
+.onboarding__input--pin {
+  letter-spacing: 0.4em;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.onboarding__notice {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 100px;
+  margin-bottom: 16px;
+}
+.onboarding__notice--success {
+  color: var(--green);
+  background: #E7F6F0;
+}
+.onboarding__notice--info {
+  color: var(--blue);
+  background: #ECF0FF;
+}
+.onboarding__notice--warning {
+  color: var(--red);
+  background: #FDECEA;
+}
+
+.onboarding__hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  margin: 16px 0 8px;
+}
+.onboarding__hint-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  flex-shrink: 0;
+}
+
+.onboarding__error {
+  font-size: 13px;
+  color: var(--red);
+  margin-top: 4px;
+  margin-bottom: 8px;
+}
+
+.onboarding__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 24px;
+}
+
+@media (max-width: 480px) {
+  .onboarding__card {
+    padding: 36px 24px 32px;
+  }
+  .onboarding__title {
+    font-size: 24px;
+  }
+}
