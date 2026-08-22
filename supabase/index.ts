@@ -1,4 +1,5 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+// import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient } from "@supabase/supabase-js"
 
 // 프론트엔드에서 호출할 때 CORS 에러를 방지하기 위한 헤더
 const corsHeaders = {
@@ -23,7 +24,7 @@ Deno.serve(async (req) => {
 
   try {
     const { studentId, pin, isFirstLogin } = await req.json()
-    
+
     // Edge Function 환경변수에서 자동으로 SUPABASE_URL과 SERVICE_ROLE_KEY를 가져옵니다.
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -40,7 +41,7 @@ Deno.serve(async (req) => {
         .is('pin_hash', null)
 
       if (error) throw error
-      
+
       return new Response(JSON.stringify({ ok: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
@@ -71,3 +72,29 @@ Deno.serve(async (req) => {
     })
   }
 })
+// // supabase/functions/verify-pin/index.ts
+// import { createClient } from '@supabase/supabase-js'
+//
+// Deno.serve(async (req) => {
+//   const { studentId, pin, isFirstLogin } = await req.json()
+//   const supabase = createClient(
+//     Deno.env.get('SUPABASE_URL')!,
+//     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!  // service role: pin_hash 접근 가능
+//   )
+//
+//   const pinHash = await hashPin(pin) // crypto.subtle 등으로 해싱
+//
+//   if (isFirstLogin) {
+//     await supabase.from('students')
+//       .update({ pin_hash: pinHash })
+//       .eq('id', studentId)
+//       .is('pin_hash', null) // 이미 설정된 경우 덮어쓰기 방지
+//     return new Response(JSON.stringify({ ok: true }))
+//   }
+//
+//   const { data } = await supabase.from('students')
+//     .select('pin_hash').eq('id', studentId).single()
+//
+//   const valid = data?.pin_hash === pinHash
+//   return new Response(JSON.stringify({ ok: valid }))
+// })
