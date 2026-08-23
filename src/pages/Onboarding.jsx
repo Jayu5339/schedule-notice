@@ -16,7 +16,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { localStore } from "../api/localStore";
+// import { localStore } from "../api/localStore";
+import { supabase } from "../../supabase/supabaseClient";
 import "./Onboarding.css";
 
 const emptyForm = { studentId: "", name: "" };
@@ -65,7 +66,7 @@ export default function Onboarding() {
   };
 
   // info 단계 제출: intent에 따라 분기가 다름
-  const handleInfoSubmit = (e) => {
+  const handleInfoSubmit = async (e) => {
     e.preventDefault();
     if (!form.studentId.trim() || !form.name.trim()) {
       setError("학번, 이름을 모두 입력해주세요");
@@ -73,33 +74,57 @@ export default function Onboarding() {
     }
     setError("");
 
-    const found = localStore.findStudent(form);
+    try {
+      // DB의 students_public View에서 학번/이름 일치 여부 확인
+      const { data: found, error } = await supabase
+        .from("students_public")
+        .select("id, name, student_number, is_manager")
+        .eq("student_number", form.studentId.trim())
+        .eq("name", form.name.trim())
+        .maybeSingle();
 
-    if (intent === "login") {
+      if (error) throw error;
+
+      if (intent === "login") {
+        if (found && !found.is_first_login) {
+          // 계정이 있고 이미 PIN이 설정됨 -> PIN 입력 단계로
+          setMatchedStudent(found);
+          setStage("login");
+        } else if (found && found.is_first_login) {
+          // 계정은 등록되어 있으나 PIN이 미설정된 상태 -> 회원가입/PIN 설정 안내
+          setMatchedStudent(found);
+          setStage("signupPin");
+        } else {
+          // 등록된 학생 명단에 없음
+          setStage("notFound");
+        }
+        return;
+      }
+
+      // intent === "signup" (최초 등록)
       if (found) {
-        // 로그인 의도로 들어왔고 계정도 있으니 바로 PIN 입력으로
-        setMatchedStudent(found);
-        setStage("login");
+        if (!found.is_first_login) {
+          // 이미 PIN까지 설정 완료된 계정
+          setMatchedStudent(found);
+          setStage("existing");
+        } else {
+          // 명단에 존재하며 PIN 미설정 상태 -> PIN 설정 단계 진행
+          setMatchedStudent(found);
+          setStage("signupPin");
+        }
       } else {
-        // 로그인 의도인데 계정이 없음 -> 회원가입 유도
+        // CSV 명단에 없는 사용자
         setStage("notFound");
       }
-      return;
-    }
-
-    // intent === "signup"
-    if (found) {
-      // 가입하려 했는데 이미 있는 계정 -> 안내 화면(existing)에서 로그인으로 이동하도록
-      setMatchedStudent(found);
-      setStage("existing");
-    } else {
-      // 신규 계정 -> PIN 설정 단계로
-      setStage("signupPin");
+    } catch (err) {
+      setError(err.message || "학생 정보 확인 중 문제가 발생했습니다");
+    } finally {
+      setSubmitting(false);
     }
   };
 
   // 회원가입: PIN 설정 -> 계정 생성
-  const handleSignupSubmit = (e) => {
+  const handleSignupSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
@@ -114,8 +139,25 @@ export default function Onboarding() {
 
     setSubmitting(true);
     try {
-      const record = localStore.createStudent({ ...form, pin });
-      login({ token: `local-${record.studentId}`, name: record.name, studentId: record.studentId });
+      const { data, error } = await supabase.functions.invoke("verify-pin", {
+        body: {
+          studentId: matchedStudent.id,
+          pin,
+          isFirstLogin: true,
+        },
+      });
+
+      if (error || !data?.ok) {
+        throw new Error(data?.error || "PIN 등록에 실패했습니다.");
+      }
+
+      // 로그인 처리 및 세션 저장
+      const studentData = {
+        id: matchedStudent.id,
+        name: matchedStudent.name,
+        studentId: matchedStudent.student_number,
+      };
+      login(studentData);
       navigate("/");
     } catch (err) {
       setError(err.message || "가입 중 문제가 발생했어요");
@@ -127,7 +169,7 @@ export default function Onboarding() {
   };
 
   // 로그인 (PIN 검증)
-  const handleLoginSubmit = (e) => {
+  const handleLoginSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
@@ -137,9 +179,40 @@ export default function Onboarding() {
     }
 
     setSubmitting(true);
+    // try {
+    //   const student = localStore.verifyPin(matchedStudent.studentId, pin);
+    //   login({
+    //     token: `local-${student.studentId}`,
+    //     name: student.name,
+    //     studentId: student.studentId,
+    //   });
+    //   navigate("/");
+    // } catch (err) {
+    //   setError(err.message || "로그인 중 문제가 발생했어요");
+    //   setPin("");
+    // } finally {
+    //   setSubmitting(false);
+    // }
     try {
-      const student = localStore.verifyPin(matchedStudent.studentId, pin);
-      login({ token: `local-${student.studentId}`, name: student.name, studentId: student.studentId });
+      const { data, error } = await supabase.functions.invoke("verify-pin", {
+        body: {
+          studentId: matchedStudent.id,
+          pin,
+          isFirstLogin: false,
+        },
+      });
+
+      if (error || !data?.ok) {
+        throw new Error("PIN 번호가 일치하지 않습니다");
+      }
+
+      // 로그인 처리 및 세션 저장
+      const studentData = {
+        id: matchedStudent.id,
+        name: matchedStudent.name,
+        studentId: matchedStudent.student_number,
+      };
+      login(studentData);
       navigate("/");
     } catch (err) {
       setError(err.message || "로그인 중 문제가 발생했어요");
@@ -160,7 +233,9 @@ export default function Onboarding() {
           <span className="onboarding__brand-name">schedule-notice</span>
           <span className="onboarding__brand-sep">·</span>
           <span className="onboarding__brand-sub">일알림</span>
-          {stepLabel && <span className="onboarding__step-count">{stepLabel}</span>}
+          {stepLabel && (
+            <span className="onboarding__step-count">{stepLabel}</span>
+          )}
         </div>
 
         {stage === "landing" && (
@@ -248,11 +323,14 @@ function LandingStage({ onStart, onLoginClick }) {
       <span className="onboarding__pill">우리 반 전용 일정 서비스</span>
       <h1 className="onboarding__title">
         흩어진 학급 일정을,
-        <br />한 곳에서 <span className="onboarding__title-accent">같이</span> 관리해요
+        <br />한 곳에서 <span className="onboarding__title-accent">
+          같이
+        </span>{" "}
+        관리해요
       </h1>
       <p className="onboarding__desc">
-        수행평가, 제출물 마감, 학교 일정, 급식 정보, 채용의뢰까지 — 반 친구들과 함께 쓰고
-        공유하는 우리 반 캘린더, 일알림입니다.
+        수행평가, 제출물 마감, 학교 일정, 급식 정보, 채용의뢰까지 — 반 친구들과
+        함께 쓰고 공유하는 우리 반 캘린더, 일알림입니다.
       </p>
 
       <div className="onboarding__tags">
@@ -267,7 +345,11 @@ function LandingStage({ onStart, onLoginClick }) {
         <button className="btn btn--primary" onClick={onStart}>
           시작하기 →
         </button>
-        <button type="button" className="onboarding__login-link" onClick={onLoginClick}>
+        <button
+          type="button"
+          className="onboarding__login-link"
+          onClick={onLoginClick}
+        >
           이미 계정이 있으신가요?
         </button>
       </div>
@@ -278,8 +360,12 @@ function LandingStage({ onStart, onLoginClick }) {
 function ExistingAccountStage({ name, onGoLogin, onBack }) {
   return (
     <>
-      <p className="onboarding__notice onboarding__notice--info">이미 계정이 있습니다</p>
-      <h2 className="onboarding__heading">{name}님, 이미 가입된 계정이 있어요</h2>
+      <p className="onboarding__notice onboarding__notice--info">
+        이미 계정이 있습니다
+      </p>
+      <h2 className="onboarding__heading">
+        {name}님, 이미 가입된 계정이 있어요
+      </h2>
       <p className="onboarding__subheading">
         아래 버튼을 눌러 로그인 화면으로 이동한 뒤 PIN을 입력해주세요.
       </p>
@@ -299,10 +385,13 @@ function ExistingAccountStage({ name, onGoLogin, onBack }) {
 function NotFoundStage({ onSignup, onBack }) {
   return (
     <>
-      <p className="onboarding__notice onboarding__notice--warning">계정이 없습니다</p>
+      <p className="onboarding__notice onboarding__notice--warning">
+        계정이 없습니다
+      </p>
       <h2 className="onboarding__heading">일치하는 계정을 찾지 못했어요</h2>
       <p className="onboarding__subheading">
-        입력하신 학번·이름으로 가입된 계정이 없어요. 아래 버튼으로 회원가입을 진행해주세요.
+        입력하신 학번·이름으로 가입된 계정이 없어요. 아래 버튼으로 회원가입을
+        진행해주세요.
       </p>
 
       <div className="onboarding__footer">
@@ -317,7 +406,16 @@ function NotFoundStage({ onSignup, onBack }) {
   );
 }
 
-function InfoForm({ title, subheading, form, onChange, onSubmit, onBack, error, submitLabel }) {
+function InfoForm({
+  title,
+  subheading,
+  form,
+  onChange,
+  onSubmit,
+  onBack,
+  error,
+  submitLabel,
+}) {
   return (
     <form onSubmit={onSubmit}>
       <h2 className="onboarding__heading">{title}</h2>
@@ -383,7 +481,11 @@ function PinForm({
 }) {
   return (
     <form onSubmit={onSubmit}>
-      {badge && <p className="onboarding__notice onboarding__notice--success">{badge}</p>}
+      {badge && (
+        <p className="onboarding__notice onboarding__notice--success">
+          {badge}
+        </p>
+      )}
       <h2 className="onboarding__heading">{title}</h2>
       <p className="onboarding__subheading">{subheading}</p>
 
@@ -421,7 +523,8 @@ function PinForm({
       )}
 
       <p className="onboarding__hint">
-        <span className="onboarding__hint-dot" /> 입력한 정보는 같은 반 친구들에게만 표시돼요
+        <span className="onboarding__hint-dot" /> 입력한 정보는 같은 반
+        친구들에게만 표시돼요
       </p>
 
       {error && <p className="onboarding__error">{error}</p>}
@@ -430,7 +533,11 @@ function PinForm({
         <button type="button" className="btn btn--link" onClick={onBack}>
           ← 뒤로가기
         </button>
-        <button className="btn btn--primary" type="submit" disabled={submitting}>
+        <button
+          className="btn btn--primary"
+          type="submit"
+          disabled={submitting}
+        >
           {submitting ? "확인 중..." : submitLabel}
         </button>
       </div>
@@ -441,7 +548,10 @@ function PinForm({
 function Tag({ color, label }) {
   return (
     <span className="onboarding__tag">
-      <span className="onboarding__tag-dot" style={{ backgroundColor: color }} />
+      <span
+        className="onboarding__tag-dot"
+        style={{ backgroundColor: color }}
+      />
       {label}
     </span>
   );
