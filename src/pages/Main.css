@@ -262,7 +262,7 @@ body {
   grid-template-columns: 1.55fr 1fr;
   gap: 18px;
   align-items: stretch;
-  height: 533px;
+  height: 600px;
 }
 
 /* Calendar */
@@ -271,7 +271,7 @@ body {
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow);
   padding: 22px 22px 18px;
-  height: 530px;
+  height: 600px;
 }
 .cal-head {
   display: flex;
@@ -442,6 +442,7 @@ body {
   box-shadow: var(--shadow);
   padding: 16px 16px 15px;
   border-left: 4px solid transparent;
+  border-left-color: #f1f1f1;
   cursor: pointer;
   transition:
     transform 0.15s ease,
@@ -450,12 +451,12 @@ body {
 }
 /* .p-card:hover {
   transform: translateY(-1px);
-  box-shadow: 0 14px 26px -18px rgba(25, 27, 41, 0.22);
+  box-shadow: 0 14px 26px -18px rgba(64, 65, 74, 0.22);
 } */
-/* .p-card.pinned {
+.p-card.pinned {
   border-left-color: var(--perf);
   background: linear-gradient(180deg, var(--perf-bg) 0%, var(--surface) 72px);
-} */
+}
 .p-card.expanded {
   border-color: rgba(91, 143, 255, 0.71);
 }
@@ -712,9 +713,20 @@ body {
 @media (max-width: 880px) {
   .main-grid {
     grid-template-columns: 1fr;
+    /* max-height: 400px; */
   }
   .bottom-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .priority-col {
+    height: auto; /* PC용 100% 해제 */
+    max-height: 400px; /* 필요하면 모바일에서도 적당한 상한선만 (선택사항) */
+    overflow-y: auto;
+  }
+
+  .calendar-card {
+    height: 430px;
   }
 }
 

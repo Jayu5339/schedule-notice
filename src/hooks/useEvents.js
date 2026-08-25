@@ -112,6 +112,7 @@ export function useEvents(user = null) {
       hot: diffDays <= 2 && diffDays >= 0,
       faded: diffDays < 0,
       diffDays,
+      eventDate: e.event_date,
       createdAt: e.created_at,
     };
   });

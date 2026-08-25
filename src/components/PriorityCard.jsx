@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const CATEGORY_LABELS = {
   perf: "수행평가",
@@ -15,6 +15,17 @@ export default function PriorityCard({
 }) {
   const [expanded, setExpanded] = useState(false);
 
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("priority_expanded");
+      if (!raw) return;
+      const map = JSON.parse(raw || "{}") || {};
+      if (map[item.id]) setExpanded(true);
+    } catch (e) {
+      // ignore
+    }
+  }, [item.id]);
+
   const classNames = [
     "p-card",
     item.pinned && "pinned",
@@ -26,7 +37,19 @@ export default function PriorityCard({
 
   const handleCardClick = (event) => {
     if (event.target.closest("button")) return;
-    setExpanded((prev) => !prev);
+    setExpanded((prev) => {
+      const next = !prev;
+      try {
+        const raw = localStorage.getItem("priority_expanded");
+        const map = JSON.parse(raw || "{}") || {};
+        if (next) map[item.id] = true;
+        else delete map[item.id];
+        localStorage.setItem("priority_expanded", JSON.stringify(map));
+      } catch (e) {
+        // ignore
+      }
+      return next;
+    });
   };
 
   return (

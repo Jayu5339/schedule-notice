@@ -43,6 +43,22 @@ export function AuthProvider({ children }) {
 
       try {
         const parsedUser = JSON.parse(stored);
+        // expire session after 7 days
+        try {
+          const loginAt = parsedUser._loginAt || parsedUser.loginAt;
+          if (loginAt) {
+            const then = new Date(loginAt).getTime();
+            const now = Date.now();
+            const days = (now - then) / (1000 * 60 * 60 * 24);
+            if (days > 7) {
+              localStorage.removeItem("student_session");
+              setIsReady(true);
+              return;
+            }
+          }
+        } catch (err) {
+          // ignore parsing errors related to timestamp
+        }
         const currentUser = normalizeUser(parsedUser);
 
         const { data, error } = await supabase
@@ -60,6 +76,8 @@ export function AuthProvider({ children }) {
             schoolYear: data.school_year ?? currentUser.schoolYear,
             isManager: data.is_manager ?? currentUser.isManager,
           });
+          // preserve original login timestamp if present
+          if (parsedUser._loginAt) merged._loginAt = parsedUser._loginAt;
           setUser(merged);
           localStorage.setItem("student_session", JSON.stringify(merged));
         } else {
@@ -79,7 +97,9 @@ export function AuthProvider({ children }) {
 
   const login = (userInfo) => {
     const normalizedUser = normalizeUser(userInfo);
-    localStorage.setItem("student_session", JSON.stringify(normalizedUser));
+    // stamp login time for expiry checks
+    const withStamp = { ...normalizedUser, _loginAt: new Date().toISOString() };
+    localStorage.setItem("student_session", JSON.stringify(withStamp));
     setUser(normalizedUser);
   };
 

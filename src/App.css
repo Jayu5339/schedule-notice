@@ -1,24 +1,25 @@
-:root{
---bg:#F3F4FA;
---surface:#FFFFFF;
---surface-alt:#FAFBFF;
---ink:#191B29;
---ink-soft:#6C7086;
---ink-faint:#A4A8BF;
---border:#E7E9F3;
---perf:#FF5C4D;      /* 수행평가 */
---perf-bg:#FFF0EE;
---submit:#3E7CFF;    /* 제출물 */
---submit-bg:#EBF1FF;
---meal:#F2A900;      /* 급식 */
---meal-bg:#FFF6E1;
---recruit:#8C6BFF;   /* 채용의뢰 */
---recruit-bg:#F1EDFF;
---school:#17B58F;    /* 학교일정 */
---school-bg:#E6F8F3;
+:root {
+  --bg: #f3f4fa;
+  --surface: #ffffff;
+  --surface-alt: #fafbff;
+  --ink: #191b29;
+  --ink-soft: #6c7086;
+  --ink-faint: #a4a8bf;
+  --border: #e7e9f3;
+  --perf: #d9d9d9; /* 수행평가 */
+  --perf-bg: #fff0ee;
+  --submit: #3e7cff; /* 제출물 */
+  --submit-bg: #ebf1ff;
+  --meal: #f2a900; /* 급식 */
+  --meal-bg: #fff6e1;
+  --recruit: #8c6bff; /* 채용의뢰 */
+  --recruit-bg: #f1edff;
+  --school: #17b58f; /* 학교일정 */
+  --school-bg: #e6f8f3;
 
---radius-lg:20px;
---radius-md:14px;
---radius-sm:9px;
---shadow:0 1px 2px rgba(25,27,41,0.04), 0 8px 24px -12px rgba(25,27,41,0.10);
+  --radius-lg: 20px;
+  --radius-md: 14px;
+  --radius-sm: 9px;
+  --shadow:
+    0 1px 2px rgba(25, 27, 41, 0.04), 0 8px 24px -12px rgba(25, 27, 41, 0.1);
 }

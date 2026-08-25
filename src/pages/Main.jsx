@@ -34,6 +34,7 @@ export default function Main() {
   const [viewYear, setViewYear] = useState(TODAY.year);
   const [viewMonth, setViewMonth] = useState(TODAY.month);
   const [selectedDate, setSelectedDate] = useState(TODAY);
+  const selectedDateStr = `${selectedDate.year}-${String(selectedDate.month).padStart(2, "0")}-${String(selectedDate.day).padStart(2, "0")}`;
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
 
@@ -44,6 +45,9 @@ export default function Main() {
     const items = [...priorityItems];
 
     return items.sort((a, b) => {
+      // Always push past items (diffDays < 0, D+1 등) to the bottom regardless of other criteria
+      if (a.diffDays < 0 && b.diffDays >= 0) return 1;
+      if (b.diffDays < 0 && a.diffDays >= 0) return -1;
       if (sortBy === "dday") {
         const aUrgency =
           a.diffDays < 0 ? Number.MAX_SAFE_INTEGER + a.diffDays : a.diffDays;
@@ -75,7 +79,20 @@ export default function Main() {
     });
   }, [priorityItems, sortBy]);
 
-  const displayPriorityItems = sortedPriorityItems;
+  // If the selected date is before today, include ALL past items (D+1+) as well.
+  const selectedDateObj = new Date(
+    selectedDate.year,
+    selectedDate.month - 1,
+    selectedDate.day,
+  );
+  const todayObj = new Date(TODAY.year, TODAY.month - 1, TODAY.day);
+  const selectedIsPast = selectedDateObj < todayObj;
+
+  const displayPriorityItems = sortedPriorityItems.filter((it) => {
+    if (selectedIsPast && it.diffDays < 0) return true; // include all past items
+    // otherwise include upcoming items or items on the selected date
+    return it.diffDays >= 0 || it.eventDate === selectedDateStr;
+  });
   const displayEventsByDate = eventsByDate;
 
   const handlePrevMonth = () => {
@@ -98,7 +115,7 @@ export default function Main() {
     }
   };
 
-  const selectedDateStr = `${selectedDate.year}-${String(selectedDate.month).padStart(2, "0")}-${String(selectedDate.day).padStart(2, "0")}`;
+  // const selectedDateStr = `${selectedDate.year}-${String(selectedDate.month).padStart(2, "0")}-${String(selectedDate.day).padStart(2, "0")}`;
 
   const handleEditEvent = (event) => {
     setEditingEvent(event);
