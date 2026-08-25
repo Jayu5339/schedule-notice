@@ -1,48 +1,63 @@
 import { useCallback, useEffect, useState } from "react";
 import { fetchEvents, createEvent, deleteEvent } from "../api/eventsApi";
 import { computeDday } from "../utils/dday";
+import { getClassFilterFromUser } from "../utils/studentClass";
 
-export function useEvents() {
+export function useEvents(user = null) {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const classFilter = getClassFilterFromUser(user);
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await fetchEvents();
+      const data = await fetchEvents(classFilter);
       setEvents(data);
       setError(null);
     } catch (e) {
       setError(e);
+      setEvents([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [classFilter]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    load();
-  }, [load]);
+    if (!classFilter) {
+      setEvents([]);
+      setLoading(false);
+      return;
+    }
 
-  const addEvent = useCallback(async (payload) => {
-    const created = await createEvent(payload);
-    setEvents((prev) => [...prev, created]);
-    return created;
-  }, []);
+    load();
+  }, [classFilter, load]);
+
+  const addEvent = useCallback(
+    async (payload) => {
+      const created = await createEvent({
+        ...payload,
+        school_year: classFilter?.school_year,
+        grade: classFilter?.grade,
+        class_number: classFilter?.class_number,
+      });
+      setEvents((prev) => [...prev, created]);
+      return created;
+    },
+    [classFilter],
+  );
 
   const removeEvent = useCallback(async (id) => {
     await deleteEvent(id);
     setEvents((prev) => prev.filter((e) => e.id !== id));
   }, []);
 
-  // 캘린더 dot용: { "2026-08-19": ["submit"], ... }
   const eventsByDate = events.reduce((acc, e) => {
     (acc[e.event_date] ||= []).push(e.category);
     return acc;
   }, {});
 
-  // 우측 우선순위 카드용: D-day 계산 + 임박순 정렬 + faded/hot 스타일 플래그
   const priorityItems = events
     .map((e) => {
       const { label, diffDays } = computeDday(e.event_date);
@@ -57,7 +72,7 @@ export function useEvents() {
         faded: diffDays < 0,
       };
     })
-    .sort((a, b) => (a.dday === b.dday ? 0 : 0)) // 필요하면 diffDays 기준 정렬 로직 추가
+    .sort((a, b) => (a.dday === b.dday ? 0 : 0))
     .sort((a, b) => (a.pinned === b.pinned ? 0 : a.pinned ? -1 : 1));
 
   return {

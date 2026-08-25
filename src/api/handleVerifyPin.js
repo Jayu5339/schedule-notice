@@ -1,28 +1,29 @@
-import { createClient } from '@supabase/supabase-js'
+import { supabase } from "../../supabase/supabaseClient";
 
-// 1. 일반적인 Anon Key로 클라이언트 생성
-const supabaseUrl = 'https://your-project-id.supabase.co'
-const supabaseAnonKey = 'your-anon-key'
-const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export default async function handleVerifyPin({
+  studentId,
+  pin,
+  isFirstLogin,
+}) {
+  if (!studentId || !pin) {
+    throw new Error("studentId와 pin이 필요합니다.");
+  }
 
-// 2. PIN 번호 검증 함수
-export default async function handleVerifyPin() {
-  const { data, error } = await supabase.functions.invoke('verify-pin', {
+  const { data, error } = await supabase.functions.invoke("verify-pin", {
     body: {
-      studentId: 'student_123',
-      pin: '1234',
-      isFirstLogin: false // 최초 로그인일 때는 true
-    }
-  })
+      studentId,
+      pin,
+      isFirstLogin,
+    },
+  });
 
   if (error) {
-    console.error('호출 실패:', error)
-    return
+    throw error;
   }
 
-  if (data.ok) {
-    console.log('PIN 인증 성공!')
-  } else {
-    console.log('PIN 일치하지 않음')
+  if (!data?.ok) {
+    throw new Error(data?.error || "PIN 인증에 실패했습니다.");
   }
+
+  return data;
 }

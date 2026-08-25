@@ -1,6 +1,7 @@
 // client/src/context/AuthContext.jsx
 import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "../.././supabase/supabaseClient"; // Supabase 클라이언트 인스턴스
+import { getStudentClassMeta } from "../utils/studentClass";
 
 const AuthContext = createContext(null);
 
@@ -15,21 +16,27 @@ export function AuthProvider({ children }) {
         try {
           const parsedUser = JSON.parse(stored);
 
-          // (선택 사항) 로컬 스토리지의 유저가 실제 DB에 여전히 존재하는지 가볍게 검증
           const { data, error } = await supabase
             .from("students_public")
-            .select("id, name, student_number")
+            .select("id, name, student_number, school_year")
             .eq("id", parsedUser.id)
             .maybeSingle();
 
           if (data && !error) {
+            const classMeta = getStudentClassMeta(
+              data.student_number,
+              data.school_year ?? 2026,
+            );
             setUser({
               id: data.id,
               name: data.name,
               studentId: data.student_number,
+              schoolYear: data.school_year ?? classMeta.schoolYear,
+              grade: classMeta.grade,
+              classNumber: classMeta.classNumber,
+              classLabel: classMeta.classLabel,
             });
           } else {
-            // DB에서 삭제되었거나 찾을 수 없는 경우 로컬 세션 제거
             localStorage.removeItem("student_session");
             setUser(null);
           }
@@ -44,14 +51,23 @@ export function AuthProvider({ children }) {
     initAuth();
   }, []);
 
-  // 로그인 성공 시 호출 (Edge Function 인증 완료 후)
   const login = (userInfo) => {
-    // userInfo 형태: { id, name, studentId }
-    localStorage.setItem("student_session", JSON.stringify(userInfo));
-    setUser(userInfo);
+    const classMeta = getStudentClassMeta(
+      userInfo.studentId,
+      userInfo.schoolYear ?? 2026,
+    );
+    const normalizedUser = {
+      ...userInfo,
+      schoolYear: userInfo.schoolYear ?? classMeta.schoolYear,
+      grade: userInfo.grade ?? classMeta.grade,
+      classNumber: userInfo.classNumber ?? classMeta.classNumber,
+      classLabel: userInfo.classLabel ?? classMeta.classLabel,
+    };
+
+    localStorage.setItem("student_session", JSON.stringify(normalizedUser));
+    setUser(normalizedUser);
   };
 
-  // 로그아웃
   const logout = () => {
     localStorage.removeItem("student_session");
     setUser(null);

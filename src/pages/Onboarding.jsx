@@ -16,6 +16,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import handleVerifyPin from "../api/handleVerifyPin";
 // import { localStore } from "../api/localStore";
 import { supabase } from "../../supabase/supabaseClient";
 import "./Onboarding.css";
@@ -148,23 +149,17 @@ export default function Onboarding() {
 
     setSubmitting(true);
     try {
-      const { data, error } = await supabase.functions.invoke("verify-pin", {
-        body: {
-          studentId: matchedStudent.id,
-          pin_hash: pin,
-          is_register: true,
-        },
+      await handleVerifyPin({
+        studentId: matchedStudent.id,
+        pin,
+        isFirstLogin: true,
       });
 
-      if (error || !data?.ok) {
-        throw new Error(data?.error || "PIN 등록에 실패했습니다.");
-      }
-
-      // 로그인 처리 및 세션 저장
       const studentData = {
         id: matchedStudent.id,
         name: matchedStudent.name,
         studentId: matchedStudent.student_number,
+        schoolYear: matchedStudent.school_year ?? 2026,
       };
       login(studentData);
       navigate("/");
@@ -188,38 +183,18 @@ export default function Onboarding() {
     }
 
     setSubmitting(true);
-    // try {
-    //   const student = localStore.verifyPin(matchedStudent.studentId, pin);
-    //   login({
-    //     token: `local-${student.studentId}`,
-    //     name: student.name,
-    //     studentId: student.studentId,
-    //   });
-    //   navigate("/");
-    // } catch (err) {
-    //   setError(err.message || "로그인 중 문제가 발생했어요");
-    //   setPin("");
-    // } finally {
-    //   setSubmitting(false);
-    // }
     try {
-      const { data, error } = await supabase.functions.invoke("verify-pin", {
-        body: {
-          studentId: matchedStudent.id,
-          pin,
-          isFirstLogin: false,
-        },
+      await handleVerifyPin({
+        studentId: matchedStudent.id,
+        pin,
+        isFirstLogin: false,
       });
 
-      if (error || !data?.ok) {
-        throw new Error("PIN 번호가 일치하지 않습니다");
-      }
-
-      // 로그인 처리 및 세션 저장
       const studentData = {
         id: matchedStudent.id,
         name: matchedStudent.name,
         studentId: matchedStudent.student_number,
+        schoolYear: matchedStudent.school_year ?? 2026,
       };
       login(studentData);
       navigate("/");

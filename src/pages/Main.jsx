@@ -6,29 +6,24 @@ import Calendar from "../components/Calendar";
 import PriorityList from "../components/PriorityList";
 import BottomGrid from "../components/BottomGrid";
 import {
-  priorityItems,
+  priorityItems as mockPriorityItems,
   recruitDeadlines,
   submissionDeadlines,
   performanceDeadlines,
   mealData,
-  eventsByDate,
+  eventsByDate as mockEventsByDate,
   TODAY,
 } from "../data/mockData";
 import "./Main.css";
-// import { useState } from "react";
-// import TopBar from "../components/TopBar";
-// import Toolbar from "../components/Toolbar";
-// import Calendar from "../components/calendar/Calendar";
-// import PriorityList from "../components/priority/PriorityList";
-// import BottomGrid from "../components/bottom/BottomGrid";
 import AddEventModal from "../components/modals/AddEventModal";
 import { useEvents } from "../hooks/useEvents";
-// import "./Main.css";
-
-// const TODAY = { year: 2026, month: 8, day: 18 };
+import { getStudentClassMeta } from "../utils/studentClass";
 
 export default function Main() {
-  const user = { name: "이상희", studentId: "20304", verified: true };
+  const { user } = useAuth();
+  const classMeta = user
+    ? getStudentClassMeta(user.studentId, user.schoolYear ?? 2026)
+    : null;
 
   const [sortBy, setSortBy] = useState("importance");
   const [viewYear, setViewYear] = useState(TODAY.year);
@@ -36,7 +31,13 @@ export default function Main() {
   const [selectedDate, setSelectedDate] = useState(TODAY);
   const [showAddModal, setShowAddModal] = useState(false);
 
-  const { priorityItems, eventsByDate, addEvent } = useEvents();
+  const { priorityItems, eventsByDate, addEvent } = useEvents(user);
+  const displayPriorityItems = priorityItems.length
+    ? priorityItems
+    : mockPriorityItems;
+  const displayEventsByDate = Object.keys(eventsByDate).length
+    ? eventsByDate
+    : mockEventsByDate;
 
   const handlePrevMonth = () => {
     if (viewMonth === 1) {
@@ -62,10 +63,21 @@ export default function Main() {
 
   return (
     <div className="main-page">
-      <TopBar user={user} />
+      <TopBar
+        user={
+          user
+            ? {
+                ...user,
+                verified: true,
+              }
+            : { name: "", studentId: "", verified: false }
+        }
+      />
 
       <div className="header-row">
-        <div className="className-chip">2026 · 3학년 2반</div>
+        <div className="className-chip">
+          {classMeta?.classLabel ?? "2026 · 3학년 2반"}
+        </div>
       </div>
 
       <Toolbar
@@ -80,17 +92,17 @@ export default function Main() {
           month={viewMonth}
           selectedDate={selectedDate}
           today={TODAY}
-          eventsByDate={eventsByDate}
+          eventsByDate={displayEventsByDate}
           onPrevMonth={handlePrevMonth}
           onNextMonth={handleNextMonth}
           onSelectDay={handleSelectDay}
         />
-        <PriorityList items={priorityItems} />
+        <PriorityList items={displayPriorityItems} />
       </div>
 
       <BottomGrid
         recruits={recruitDeadlines}
-        events={priorityItems}
+        events={displayPriorityItems}
         selectedDate={selectedDate}
       />
 
