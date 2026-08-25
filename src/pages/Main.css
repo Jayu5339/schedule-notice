@@ -1,4 +1,11 @@
 .main-page {
+  /* 페이지 레이아웃: 중앙 정렬 + 좌우 여백
+     기존 코드는 이 규칙이 .page라는 미사용 클래스에 있어서
+     실제로는 적용되지 않고 있었음 */
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 28px 40px 56px;
+
   --bg: #f3f4fa;
   --surface: #ffffff;
   --surface-alt: #fafbff;
@@ -40,12 +47,6 @@ body {
 }
 .mono {
   font-family: "JetBrains Mono", monospace;
-}
-
-.page {
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: 28px 24px 56px;
 }
 
 /* ---------- Top bar ---------- */
@@ -402,11 +403,12 @@ body {
   line-height: 1.5;
   margin: 0;
 }
+/* }
 .p-card.faded {
   opacity: 0.55;
   padding-bottom: 26px;
   mask-image: linear-gradient(180deg, #000 40%, transparent 95%);
-}
+} */
 
 /* ---------- Bottom grid ---------- */
 .bottom-grid {
@@ -537,4 +539,12 @@ body {
   .bottom-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+}
+
+.cal-cell {
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+.cal-cell:hover:not(.selected) {
+  background: var(--surface-alt);
 }

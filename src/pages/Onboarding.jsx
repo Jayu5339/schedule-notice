@@ -84,13 +84,22 @@ export default function Onboarding() {
         .maybeSingle();
 
       if (error) throw error;
+      console.log(found);
+      // if (error || !student) {
+      //   alert("등록된 학생이 아닙니다.");
+      //   setMatchedStudent(null);
+      //   return;
+      // }
+
+      // // 조회가 성공했을 때만 상태에 저장
+      // setMatchedStudent(student);
 
       if (intent === "login") {
-        if (found && !found.is_first_login) {
+        if (found && found.is_register) {
           // 계정이 있고 이미 PIN이 설정됨 -> PIN 입력 단계로
           setMatchedStudent(found);
           setStage("login");
-        } else if (found && found.is_first_login) {
+        } else if (found && !found.is_register) {
           // 계정은 등록되어 있으나 PIN이 미설정된 상태 -> 회원가입/PIN 설정 안내
           setMatchedStudent(found);
           setStage("signupPin");
@@ -103,7 +112,7 @@ export default function Onboarding() {
 
       // intent === "signup" (최초 등록)
       if (found) {
-        if (!found.is_first_login) {
+        if (found.is_register) {
           // 이미 PIN까지 설정 완료된 계정
           setMatchedStudent(found);
           setStage("existing");
@@ -142,8 +151,8 @@ export default function Onboarding() {
       const { data, error } = await supabase.functions.invoke("verify-pin", {
         body: {
           studentId: matchedStudent.id,
-          pin,
-          isFirstLogin: true,
+          pin_hash: pin,
+          is_register: true,
         },
       });
 
