@@ -79,7 +79,7 @@ export default function Onboarding() {
       // DB의 students_public View에서 학번/이름 일치 여부 확인
       const { data: found, error } = await supabase
         .from("students_public")
-        .select("id, name, student_number, is_manager")
+        .select("id, name, student_number, school_year, is_manager")
         .eq("student_number", form.studentId.trim())
         .eq("name", form.name.trim())
         .maybeSingle();
@@ -160,6 +160,7 @@ export default function Onboarding() {
         name: matchedStudent.name,
         studentId: matchedStudent.student_number,
         schoolYear: matchedStudent.school_year ?? 2026,
+        isManager: Boolean(matchedStudent.is_manager),
       };
       login(studentData);
       navigate("/");
@@ -195,6 +196,7 @@ export default function Onboarding() {
         name: matchedStudent.name,
         studentId: matchedStudent.student_number,
         schoolYear: matchedStudent.school_year ?? 2026,
+        isManager: Boolean(matchedStudent.is_manager),
       };
       login(studentData);
       navigate("/");

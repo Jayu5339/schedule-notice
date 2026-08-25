@@ -14,11 +14,15 @@ export default function TopBar({ user }) {
       <div className="id-chip">
         <span className="who">{user.name}</span>
         <span className="num mono">{user.studentId}</span>
-        {user.verified && (
+        {user.isManager ? (
+          <span className="manager-badge">
+            <span className="dot"></span>관리자
+          </span>
+        ) : user.verified ? (
           <span className="verified">
             <span className="dot"></span>인증됨
           </span>
-        )}
+        ) : null}
       </div>
     </div>
   );

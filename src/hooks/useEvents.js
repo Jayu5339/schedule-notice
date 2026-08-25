@@ -1,5 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
-import { fetchEvents, createEvent, deleteEvent } from "../api/eventsApi";
+import { useCallback, useEffect, useState, useMemo } from "react";
+import {
+  fetchEvents,
+  createEvent,
+  updateEvent,
+  deleteEvent,
+} from "../api/eventsApi";
 import { computeDday } from "../utils/dday";
 import { getClassFilterFromUser } from "../utils/studentClass";
 
@@ -8,7 +13,7 @@ export function useEvents(user = null) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const classFilter = getClassFilterFromUser(user);
+  const classFilter = useMemo(() => getClassFilterFromUser(user), [user]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -25,28 +30,65 @@ export function useEvents(user = null) {
   }, [classFilter]);
 
   useEffect(() => {
-    if (!classFilter) {
-      setEvents([]);
-      setLoading(false);
-      return;
-    }
+    let active = true;
 
-    load();
-  }, [classFilter, load]);
+    const run = async () => {
+      if (!classFilter) {
+        if (active) {
+          setEvents([]);
+          setLoading(false);
+        }
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const data = await fetchEvents(classFilter);
+        if (active) {
+          setEvents(data);
+          setError(null);
+        }
+      } catch (e) {
+        if (active) {
+          setError(e);
+          setEvents([]);
+        }
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    run();
+
+    return () => {
+      active = false;
+    };
+  }, [classFilter]);
 
   const addEvent = useCallback(
     async (payload) => {
+      if (!classFilter) {
+        throw new Error("로그인 후에만 일정을 추가할 수 있어요.");
+      }
+
       const created = await createEvent({
         ...payload,
+        pinned: payload.category === "perf" ? true : Boolean(payload.pinned),
         school_year: classFilter?.school_year,
         grade: classFilter?.grade,
         class_number: classFilter?.class_number,
       });
-      setEvents((prev) => [...prev, created]);
+      setEvents((prev) => [created, ...prev]);
       return created;
     },
     [classFilter],
   );
+
+  const updateExistingEvent = useCallback(async (id, updates) => {
+    const saved = await updateEvent(id, updates);
+    setEvents((prev) => prev.map((event) => (event.id === id ? saved : event)));
+    return saved;
+  }, []);
 
   const removeEvent = useCallback(async (id) => {
     await deleteEvent(id);
@@ -58,22 +100,21 @@ export function useEvents(user = null) {
     return acc;
   }, {});
 
-  const priorityItems = events
-    .map((e) => {
-      const { label, diffDays } = computeDday(e.event_date);
-      return {
-        id: e.id,
-        category: e.category,
-        dday: label,
-        title: e.title,
-        desc: e.description,
-        pinned: e.pinned,
-        hot: diffDays <= 2 && diffDays >= 0,
-        faded: diffDays < 0,
-      };
-    })
-    .sort((a, b) => (a.dday === b.dday ? 0 : 0))
-    .sort((a, b) => (a.pinned === b.pinned ? 0 : a.pinned ? -1 : 1));
+  const priorityItems = events.map((e) => {
+    const { label, diffDays } = computeDday(e.event_date);
+    return {
+      id: e.id,
+      category: e.category,
+      dday: label,
+      title: e.title,
+      desc: e.description || "설명 없음",
+      pinned: Boolean(e.pinned) || e.category === "perf",
+      hot: diffDays <= 2 && diffDays >= 0,
+      faded: diffDays < 0,
+      diffDays,
+      createdAt: e.created_at,
+    };
+  });
 
   return {
     events,
@@ -82,6 +123,7 @@ export function useEvents(user = null) {
     loading,
     error,
     addEvent,
+    updateEvent: updateExistingEvent,
     removeEvent,
     refresh: load,
   };

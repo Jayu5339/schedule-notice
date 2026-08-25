@@ -70,9 +70,9 @@ export default function Calendar({
               <span className="num">{cell.day}</span>
               {categories.length > 0 && (
                 <div className="dots">
-                  {categories.map((cat) => (
+                  {categories.map((cat, index) => (
                     <span
-                      key={cat}
+                      key={`${dateKey(cell.year, cell.month, cell.day)}-${cat}-${index}`}
                       style={{ background: CATEGORY_COLORS[cat] }}
                     ></span>
                   ))}

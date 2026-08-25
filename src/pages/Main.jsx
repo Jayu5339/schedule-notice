@@ -1,23 +1,28 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import TopBar from "../components/TopBar";
 import Toolbar from "../components/Toolbar";
 import Calendar from "../components/Calendar";
 import PriorityList from "../components/PriorityList";
 import BottomGrid from "../components/BottomGrid";
-import {
-  priorityItems as mockPriorityItems,
-  recruitDeadlines,
-  submissionDeadlines,
-  performanceDeadlines,
-  mealData,
-  eventsByDate as mockEventsByDate,
-  TODAY,
-} from "../data/mockData";
 import "./Main.css";
 import AddEventModal from "../components/modals/AddEventModal";
 import { useEvents } from "../hooks/useEvents";
 import { getStudentClassMeta } from "../utils/studentClass";
+
+const today = new Date();
+const TODAY = {
+  year: today.getFullYear(),
+  month: today.getMonth() + 1,
+  day: today.getDate(),
+};
+
+const CATEGORY_PRIORITY = {
+  perf: 3,
+  submit: 2,
+  school: 1,
+  recruit: 0,
+};
 
 export default function Main() {
   const { user } = useAuth();
@@ -30,14 +35,48 @@ export default function Main() {
   const [viewMonth, setViewMonth] = useState(TODAY.month);
   const [selectedDate, setSelectedDate] = useState(TODAY);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingEvent, setEditingEvent] = useState(null);
 
-  const { priorityItems, eventsByDate, addEvent } = useEvents(user);
-  const displayPriorityItems = priorityItems.length
-    ? priorityItems
-    : mockPriorityItems;
-  const displayEventsByDate = Object.keys(eventsByDate).length
-    ? eventsByDate
-    : mockEventsByDate;
+  const { priorityItems, eventsByDate, addEvent, updateEvent, removeEvent } =
+    useEvents(user);
+
+  const sortedPriorityItems = useMemo(() => {
+    const items = [...priorityItems];
+
+    return items.sort((a, b) => {
+      if (sortBy === "dday") {
+        const aUrgency =
+          a.diffDays < 0 ? Number.MAX_SAFE_INTEGER + a.diffDays : a.diffDays;
+        const bUrgency =
+          b.diffDays < 0 ? Number.MAX_SAFE_INTEGER + b.diffDays : b.diffDays;
+        return (
+          aUrgency - bUrgency ||
+          Number(new Date(b.createdAt || 0)) -
+            Number(new Date(a.createdAt || 0))
+        );
+      }
+
+      if (sortBy === "created") {
+        return (
+          Number(new Date(b.createdAt || 0)) -
+          Number(new Date(a.createdAt || 0))
+        );
+      }
+
+      const aPriority = CATEGORY_PRIORITY[a.category] ?? 0;
+      const bPriority = CATEGORY_PRIORITY[b.category] ?? 0;
+      if (aPriority !== bPriority) return bPriority - aPriority;
+      if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+      const aUrgency =
+        a.diffDays < 0 ? Number.MAX_SAFE_INTEGER + a.diffDays : a.diffDays;
+      const bUrgency =
+        b.diffDays < 0 ? Number.MAX_SAFE_INTEGER + b.diffDays : b.diffDays;
+      return aUrgency - bUrgency;
+    });
+  }, [priorityItems, sortBy]);
+
+  const displayPriorityItems = sortedPriorityItems;
+  const displayEventsByDate = eventsByDate;
 
   const handlePrevMonth = () => {
     if (viewMonth === 1) {
@@ -61,6 +100,26 @@ export default function Main() {
 
   const selectedDateStr = `${selectedDate.year}-${String(selectedDate.month).padStart(2, "0")}-${String(selectedDate.day).padStart(2, "0")}`;
 
+  const handleEditEvent = (event) => {
+    setEditingEvent(event);
+    setShowAddModal(true);
+  };
+
+  const handleSaveEvent = async (payload) => {
+    if (editingEvent) {
+      await updateEvent(editingEvent.id, {
+        title: payload.title,
+        description: payload.description,
+        category: payload.category,
+        event_date: payload.event_date,
+        pinned: payload.category === "perf" || Boolean(payload.pinned),
+      });
+    } else {
+      await addEvent(payload);
+    }
+    setEditingEvent(null);
+  };
+
   return (
     <div className="main-page">
       <TopBar
@@ -70,7 +129,7 @@ export default function Main() {
                 ...user,
                 verified: true,
               }
-            : { name: "", studentId: "", verified: false }
+            : { name: "", studentId: "", verified: false, isManager: false }
         }
       />
 
@@ -97,11 +156,16 @@ export default function Main() {
           onNextMonth={handleNextMonth}
           onSelectDay={handleSelectDay}
         />
-        <PriorityList items={displayPriorityItems} />
+        <PriorityList
+          items={displayPriorityItems}
+          isManager={Boolean(user?.isManager)}
+          onEdit={handleEditEvent}
+          onDelete={removeEvent}
+        />
       </div>
 
       <BottomGrid
-        recruits={recruitDeadlines}
+        recruits={[]}
         events={displayPriorityItems}
         selectedDate={selectedDate}
       />
@@ -109,8 +173,22 @@ export default function Main() {
       <AddEventModal
         open={showAddModal}
         defaultDate={selectedDateStr}
-        onClose={() => setShowAddModal(false)}
-        onSubmit={addEvent}
+        initialValues={
+          editingEvent
+            ? {
+                title: editingEvent.title,
+                description: editingEvent.desc,
+                category: editingEvent.category,
+                eventDate: editingEvent.eventDate || selectedDateStr,
+              }
+            : null
+        }
+        mode={editingEvent ? "edit" : "create"}
+        onClose={() => {
+          setShowAddModal(false);
+          setEditingEvent(null);
+        }}
+        onSubmit={handleSaveEvent}
       />
     </div>
   );

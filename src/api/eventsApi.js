@@ -26,12 +26,14 @@ export async function createEvent({
   grade,
   class_number,
 }) {
+  const normalizedPinned = category === "perf" ? true : Boolean(pinned);
+
   const payload = {
     title,
     description,
     category,
     event_date,
-    pinned,
+    pinned: normalizedPinned,
   };
 
   if (school_year != null) payload.school_year = school_year;
@@ -41,6 +43,18 @@ export async function createEvent({
   const { data, error } = await supabase
     .from("events")
     .insert([payload])
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function updateEvent(id, updates) {
+  const { data, error } = await supabase
+    .from("events")
+    .update(updates)
+    .eq("id", id)
     .select()
     .single();
 

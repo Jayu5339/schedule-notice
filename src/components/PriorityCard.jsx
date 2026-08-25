@@ -1,20 +1,73 @@
-import { CATEGORY_LABELS } from "../data/mockData";
+import { useState } from "react";
 
-export default function PriorityCard({ item }) {
-  const classNames = ["p-card", item.pinned && "pinned", item.faded && "faded"]
+const CATEGORY_LABELS = {
+  perf: "수행평가",
+  submit: "제출물",
+  school: "학교일정",
+  recruit: "채용의뢰",
+};
+
+export default function PriorityCard({
+  item,
+  isManager = false,
+  onEdit,
+  onDelete,
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  const classNames = [
+    "p-card",
+    item.pinned && "pinned",
+    item.faded && "faded",
+    expanded && "expanded",
+  ]
     .filter(Boolean)
     .join(" ");
 
+  const handleCardClick = (event) => {
+    if (event.target.closest("button")) return;
+    setExpanded((prev) => !prev);
+  };
+
   return (
-    <div className={classNames}>
+    <div className={classNames} onClick={handleCardClick}>
       <div className="p-top">
         <span className={`tag ${item.category}`}>
-          {CATEGORY_LABELS[item.category]}
+          {CATEGORY_LABELS[item.category] || item.category}
         </span>
         <span className={`dday ${item.hot ? "hot" : ""}`}>{item.dday}</span>
       </div>
-      <p className="p-title">{item.title}</p>
-      <p className="p-desc">{item.desc}</p>
+
+      <div className="p-body">
+        <p className="p-title">{item.title}</p>
+        <div className="p-meta">
+          <span className="p-bullet" />
+          {item.pinned ? "중요 일정" : "일정"}
+        </div>
+      </div>
+
+      <p className={`p-desc ${expanded ? "visible" : "trimmed"}`}>
+        {item.desc}
+      </p>
+
+      {isManager && (
+        <div className="p-actions" onClick={(e) => e.stopPropagation()}>
+          <button
+            type="button"
+            className="mini-btn mini-btn--ghost"
+            onClick={() => onEdit?.(item)}
+          >
+            수정
+          </button>
+          <button
+            type="button"
+            className="mini-btn mini-btn--danger"
+            onClick={() => onDelete?.(item.id)}
+          >
+            삭제
+          </button>
+        </div>
+      )}
     </div>
   );
 }

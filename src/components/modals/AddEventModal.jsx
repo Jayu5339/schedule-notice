@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "./AddEventModal.css";
 
 const CATEGORY_OPTIONS = [
@@ -11,15 +11,31 @@ const CATEGORY_OPTIONS = [
 export default function AddEventModal({
   open,
   defaultDate,
+  initialValues = null,
+  mode = "create",
   onClose,
   onSubmit,
 }) {
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [category, setCategory] = useState("perf");
-  const [eventDate, setEventDate] = useState(defaultDate ?? "");
+  const [title, setTitle] = useState(initialValues?.title ?? "");
+  const [description, setDescription] = useState(
+    initialValues?.description ?? "",
+  );
+  const [category, setCategory] = useState(initialValues?.category ?? "perf");
+  const [eventDate, setEventDate] = useState(
+    initialValues?.eventDate ?? defaultDate ?? "",
+  );
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
+
+  useEffect(() => {
+    if (!open) return;
+
+    setTitle(initialValues?.title ?? "");
+    setDescription(initialValues?.description ?? "");
+    setCategory(initialValues?.category ?? "perf");
+    setEventDate(initialValues?.eventDate ?? defaultDate ?? "");
+    setErrorMsg(null);
+  }, [open, initialValues, defaultDate]);
 
   if (!open) return null;
 
@@ -37,18 +53,23 @@ export default function AddEventModal({
       setErrorMsg("제목과 날짜는 필수예요.");
       return;
     }
+
     setSaving(true);
     setErrorMsg(null);
+
     try {
       await onSubmit({
         title: title.trim(),
         description,
         category,
         event_date: eventDate,
+        pinned: category === "perf",
       });
       resetAndClose();
     } catch (err) {
-      setErrorMsg("저장에 실패했어요. 잠시 후 다시 시도해주세요.");
+      setErrorMsg(
+        err?.message || "저장에 실패했어요. 잠시 후 다시 시도해주세요.",
+      );
       console.error(err);
     } finally {
       setSaving(false);
@@ -63,7 +84,7 @@ export default function AddEventModal({
         onSubmit={handleSubmit}
       >
         <div className="modal-head">
-          <h3>일정 추가</h3>
+          <h3>{mode === "edit" ? "일정 수정" : "일정 추가"}</h3>
           <button type="button" className="modal-close" onClick={resetAndClose}>
             ✕
           </button>
@@ -117,7 +138,7 @@ export default function AddEventModal({
             취소
           </button>
           <button type="submit" className="btn-primary" disabled={saving}>
-            {saving ? "저장 중…" : "추가"}
+            {saving ? "저장 중…" : mode === "edit" ? "수정" : "추가"}
           </button>
         </div>
       </form>
