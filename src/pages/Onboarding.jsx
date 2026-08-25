@@ -79,7 +79,9 @@ export default function Onboarding() {
       // DB의 students_public View에서 학번/이름 일치 여부 확인
       const { data: found, error } = await supabase
         .from("students_public")
-        .select("id, name, student_number, school_year, is_manager")
+        .select(
+          "id, name, student_number, school_year, is_manager, is_registered",
+        )
         .eq("student_number", form.studentId.trim())
         .eq("name", form.name.trim())
         .maybeSingle();
@@ -96,11 +98,12 @@ export default function Onboarding() {
       // setMatchedStudent(student);
 
       if (intent === "login") {
-        if (found && found.is_register) {
+        const isRegistered = found && Boolean(found.is_registered);
+        if (found && isRegistered) {
           // 계정이 있고 이미 PIN이 설정됨 -> PIN 입력 단계로
           setMatchedStudent(found);
           setStage("login");
-        } else if (found && !found.is_register) {
+        } else if (found && !isRegistered) {
           // 계정은 등록되어 있으나 PIN이 미설정된 상태 -> 회원가입/PIN 설정 안내
           setMatchedStudent(found);
           setStage("signupPin");
@@ -113,7 +116,8 @@ export default function Onboarding() {
 
       // intent === "signup" (최초 등록)
       if (found) {
-        if (found.is_register) {
+        const isRegistered = Boolean(found.is_registered);
+        if (isRegistered) {
           // 이미 PIN까지 설정 완료된 계정
           setMatchedStudent(found);
           setStage("existing");
