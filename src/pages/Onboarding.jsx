@@ -149,11 +149,33 @@ export default function Onboarding() {
 
     setSubmitting(true);
     try {
+      console.log(matchedStudent);
+      if (!matchedStudent || !matchedStudent.id) {
+        throw new Error("학생 정보를 찾을 수 없습니다. 다시 시도해주세요.");
+      }
+
       await handleVerifyPin({
         studentId: matchedStudent.id,
         pin,
         isFirstLogin: true,
       });
+
+      // best-effort: mark user as registered in DB if writable from client
+      try {
+        await supabase
+          .from("students_public")
+          .update({ is_registered: true })
+          .eq("id", matchedStudent.id);
+      } catch (e) {
+        try {
+          await supabase
+            .from("students")
+            .update({ is_registered: true })
+            .eq("id", matchedStudent.id);
+        } catch (e2) {
+          // ignore - server function should handle registration
+        }
+      }
 
       const studentData = {
         id: matchedStudent.id,
@@ -185,6 +207,10 @@ export default function Onboarding() {
 
     setSubmitting(true);
     try {
+      if (!matchedStudent || !matchedStudent.id) {
+        throw new Error("학생 정보를 찾을 수 없습니다. 다시 시도해주세요.");
+      }
+
       await handleVerifyPin({
         studentId: matchedStudent.id,
         pin,
